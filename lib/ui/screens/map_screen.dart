@@ -9,6 +9,7 @@ import '../../services/route_service.dart';
 import '../../services/navigation_provider.dart';
 import '../../database/fuel_database.dart';
 import '../../providers/fuel_provider.dart';
+import '../../main.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -300,6 +301,8 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
                                 _routePoints
                               );
                               _loadData();
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bind Successfully, check Dash section'), backgroundColor: Colors.blueAccent));
+                              mainNavKey.currentState?.switchToTab(0);
                             },
                             icon: const Icon(Icons.check_circle, size: 18), label: const Text('BIND'), 
                             style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),

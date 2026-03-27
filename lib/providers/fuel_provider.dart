@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../database/fuel_database.dart';
@@ -11,6 +12,10 @@ class FuelProvider extends ChangeNotifier {
   double _tankCapacity = 7;
   int _fuelBarSegments = 10;
   int _gmtOffset = 8;
+  bool _isFuelInitialized = false;
+
+  final Completer<void> _readyCompleter = Completer<void>();
+  Future<void> waitForReady() => _readyCompleter.future;
 
   double get lifetimeOdo => _lifetimeOdo;
   double get currentLiters => _currentLiters;
@@ -20,6 +25,7 @@ class FuelProvider extends ChangeNotifier {
   double get tankCapacity => _tankCapacity;
   int get fuelBarSegments => _fuelBarSegments;
   int get gmtOffset => _gmtOffset;
+  bool get isFuelInitialized => _isFuelInitialized;
 
   // Typography logic
   TextStyle get mainFont => GoogleFonts.shareTechMono();
@@ -57,7 +63,11 @@ class FuelProvider extends ChangeNotifier {
       final segments = await db.getSetting('fuel_bar_segments');
       _fuelBarSegments = int.tryParse(segments ?? '10') ?? 10;
       
+      final isInit = await db.getSetting('fuel_initialized');
+      _isFuelInitialized = isInit == 'true';
+
       debugPrint('FuelProvider Refreshed: ODO=$_lifetimeOdo');
+      if (!_readyCompleter.isCompleted) _readyCompleter.complete();
       notifyListeners();
     } catch (e) {
       debugPrint('FuelProvider Refresh Error: $e');

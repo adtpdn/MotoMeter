@@ -15,6 +15,7 @@ class LocationService {
   Stream<LatLng> get locationStream => _locationController.stream;
 
   double _currentTripDistance = 0.0;
+  double get currentTripDistance => _currentTripDistance;
   Position? _lastPosition;
   
   LatLng? get currentLocation => _lastPosition != null 
@@ -45,11 +46,6 @@ class LocationService {
         accuracy: LocationAccuracy.high,
         distanceFilter: 0,
         intervalDuration: const Duration(milliseconds: 500),
-        foregroundNotificationConfig: const ForegroundNotificationConfig(
-          notificationText: "MotoMeter is tracking your journey",
-          notificationTitle: "Real-time Tracking Active",
-          enableWakeLock: true,
-        ),
       );
     } else {
       locationSettings = const LocationSettings(
@@ -118,14 +114,10 @@ class LocationService {
   }
 
   Future<Map<String, double>> saveCurrentOdometer(
-    String startName, String endName, double destLat, double destLon, double plannedDist
+    String startName, String endName, double destLat, double destLon, double finalDistance
   ) async {
     final db = FuelDatabase.instance;
     
-    // Use the actual GPS distance if recorded, otherwise fallback to planned distance 
-    // if the user finished the trip with zero GPS movement (useful for simulators/low signal).
-    double finalDistance = _currentTripDistance > 0 ? _currentTripDistance : plannedDist;
-
     double currentTotal = await db.getLifetimeOdometer();
     double newTotal = currentTotal + finalDistance;
     await db.saveSetting('odo_lifetime', newTotal.toString());

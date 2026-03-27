@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../database/fuel_database.dart';
 import '../../providers/fuel_provider.dart';
 
@@ -120,8 +121,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: const Text('SAVE SETTINGS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1)),
               ),
             ),
+            const SizedBox(height: 32),
+            _buildSectionHeader('DATA MANAGEMENT'),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final jsonStr = await FuelDatabase.instance.exportData();
+                  await Share.share(jsonStr, subject: 'MotoMeter Backup');
+                },
+                icon: const Icon(Icons.download, color: Colors.blueAccent),
+                label: const Text('BACKUP DATA (JSON)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF151515),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _confirmWipe,
+                icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
+                label: const Text('WIPE ALL DATA', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF151515),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmWipe() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF151515),
+        title: const Text('Wipe All Data?', style: TextStyle(color: Colors.white)),
+        content: const Text('This will permanently delete ALL trips, logs, bookmarks, and reset settings to default.', style: TextStyle(color: Colors.grey)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL')),
+          TextButton(
+            onPressed: () async {
+              await FuelDatabase.instance.wipeData();
+              if (mounted) {
+                await context.read<FuelProvider>().refresh();
+                Navigator.pop(ctx);
+                _loadSettings();
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All data wiped'), backgroundColor: Colors.redAccent));
+              }
+            },
+            child: const Text('WIPE', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
       ),
     );
   }

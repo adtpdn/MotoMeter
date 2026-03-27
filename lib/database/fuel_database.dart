@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/fuel_log.dart';
@@ -72,6 +73,7 @@ class FuelDatabase {
     await db.insert('settings', {'key': 'current_liters', 'value': '7.0'});
     await db.insert('settings', {'key': 'gmt_offset', 'value': '8'});
     await db.insert('settings', {'key': 'fuel_bar_segments', 'value': '10'});
+    await db.insert('settings', {'key': 'fuel_initialized', 'value': 'false'});
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -122,7 +124,39 @@ class FuelDatabase {
     if (oldVersion < 6) {
       await db.insert('settings', {'key': 'gmt_offset', 'value': '8'}, conflictAlgorithm: ConflictAlgorithm.ignore);
       await db.insert('settings', {'key': 'fuel_bar_segments', 'value': '10'}, conflictAlgorithm: ConflictAlgorithm.ignore);
+      await db.insert('settings', {'key': 'fuel_initialized', 'value': 'false'}, conflictAlgorithm: ConflictAlgorithm.ignore);
     }
+  }
+
+  Future<void> wipeData() async {
+    final db = await instance.database;
+    await db.delete('fuel_logs');
+    await db.delete('trips');
+    await db.delete('bookmarks');
+    await db.delete('settings');
+    await db.insert('settings', {'key': 'odo_lifetime', 'value': '0'});
+    await db.insert('settings', {'key': 'tank_capacity', 'value': '7.0'});
+    await db.insert('settings', {'key': 'fuel_ratio', 'value': '20.0'});
+    await db.insert('settings', {'key': 'enable_odo_logging', 'value': 'false'});
+    await db.insert('settings', {'key': 'current_liters', 'value': '7.0'});
+    await db.insert('settings', {'key': 'gmt_offset', 'value': '8'});
+    await db.insert('settings', {'key': 'fuel_bar_segments', 'value': '10'});
+    await db.insert('settings', {'key': 'fuel_initialized', 'value': 'false'});
+  }
+
+  Future<String> exportData() async {
+    final db = await instance.database;
+    final logs = await db.query('fuel_logs');
+    final trips = await db.query('trips');
+    final bookmarks = await db.query('bookmarks');
+    final settings = await db.query('settings');
+    final data = {
+      'fuel_logs': logs,
+      'trips': trips,
+      'bookmarks': bookmarks,
+      'settings': settings,
+    };
+    return jsonEncode(data);
   }
 
   Future<void> saveSetting(String key, String value) async {

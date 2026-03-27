@@ -119,12 +119,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () async {
+                      double actual = locationService.currentTripDistance;
+                      double target = navProvider.targetDistance;
+                      
+                      double chosenDist = actual;
+                      
+                      if (target > 0 && actual < target - 1.0) {
+                         final bool? useTarget = await showDialog<bool>(
+                           context: context,
+                           builder: (ctx) => AlertDialog(
+                             backgroundColor: const Color(0xFF151515),
+                             title: const Text('Complete Trip', style: TextStyle(color: Colors.white)),
+                             content: const Text('You are ending the trip early. Which distance do you want to record?', style: TextStyle(color: Colors.grey)),
+                             actions: [
+                               TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Actual (${actual.toStringAsFixed(1)} KM)', style: const TextStyle(color: Colors.blueAccent))),
+                               TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('Estimated (${target.toStringAsFixed(1)} KM)', style: const TextStyle(color: Colors.blueAccent))),
+                             ]
+                           )
+                         );
+                         if (useTarget == null) return;
+                         chosenDist = useTarget ? target : actual;
+                      } else {
+                         if (actual == 0 && target > 0) chosenDist = target;
+                      }
+
                       final stats = await locationService.saveCurrentOdometer(
                         navProvider.startName ?? 'Current', 
                         navProvider.endName ?? 'Destination',
                         navProvider.destination?.latitude ?? 0.0,
                         navProvider.destination?.longitude ?? 0.0,
-                        navProvider.targetDistance,
+                        chosenDist,
                       );
                       
                       // Immediate reactive update

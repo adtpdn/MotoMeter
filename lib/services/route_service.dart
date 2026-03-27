@@ -78,6 +78,19 @@ class RouteService {
       if (match != null) {
         return LatLng(double.parse(match.group(1)!), double.parse(match.group(2)!));
       }
+
+      // Fallback: Check the response body (HTML) for coordinates
+      final bodyReq = await client.get(Uri.parse(finalUrl));
+      if (bodyReq.statusCode == 200) {
+        var bodyMatch = regexAt.firstMatch(bodyReq.body);
+        bodyMatch ??= regex3d.firstMatch(bodyReq.body);
+        bodyMatch ??= regexQ.firstMatch(bodyReq.body);
+        bodyMatch ??= regexLL.firstMatch(bodyReq.body);
+        bodyMatch ??= RegExp(r'center=(-?\d+\.\d+)%2C(-?\d+\.\d+)').firstMatch(bodyReq.body);
+        if (bodyMatch != null) {
+          return LatLng(double.parse(bodyMatch.group(1)!), double.parse(bodyMatch.group(2)!));
+        }
+      }
     } catch (e) {
       print('URL resolution error: $e');
     }
