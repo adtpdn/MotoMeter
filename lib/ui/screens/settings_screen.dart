@@ -17,7 +17,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _odoController = TextEditingController();
   final _fuelController = TextEditingController();
   final _segmentController = TextEditingController();
-  String _uiProfile = 'A'; // New profile state
   bool _enableOdo = true;
   bool _isLoading = true;
 
@@ -43,7 +42,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _odoController.text = odo.toStringAsFixed(1);
       _fuelController.text = fuel.toStringAsFixed(1);
       _segmentController.text = segments;
-      _uiProfile = (await db.getSetting('ui_profile')) ?? 'A';
       _gmtController.text = gmt;
       _enableOdo = odoEnabled != 'false';
       _isLoading = false;
@@ -57,7 +55,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await db.saveSetting('odo_lifetime', _odoController.text);
     await db.saveSetting('current_liters', _fuelController.text);
     await db.saveSetting('fuel_bar_segments', _segmentController.text);
-    await db.saveSetting('ui_profile', _uiProfile);
     await db.saveSetting('gmt_offset', _gmtController.text);
     await db.saveSetting('enable_odo_logging', _enableOdo.toString());
     
@@ -92,31 +89,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 16),
             _buildTextField(_odoController, 'Current Total Odometer (KM)', Icons.speed),
 
-            const SizedBox(height: 32),
-            const Text('INSTRUMENT PROFILE', style: TextStyle(color: Colors.grey, fontSize: 10, letterSpacing: 2)),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF151515),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _uiProfile,
-                  isExpanded: true,
-                  dropdownColor: const Color(0xFF151515),
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  items: [
-                    const DropdownMenuItem(value: 'A', child: Text('PROFILE A - Share Tech Mono (Default)')),
-                    const DropdownMenuItem(value: 'B', child: Text('PROFILE B - Kode Mono')),
-                    const DropdownMenuItem(value: 'C', child: Text('PROFILE C - Orbitron (Classic)')),
-                  ],
-                  onChanged: (v) => setState(() => _uiProfile = v!),
-                ),
-              ),
-            ),
-            
+    
             const SizedBox(height: 48),
             _buildSectionHeader('DATA LOGGING'),
             const SizedBox(height: 8),

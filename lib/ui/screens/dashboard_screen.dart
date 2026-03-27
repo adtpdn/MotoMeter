@@ -68,13 +68,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               const TextSpan(text: ' KM', style: TextStyle(color: Colors.white24, fontSize: 10)),
                             ],
                           ),
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.5, fontFamily: 'monospace'),
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.5),
                         );
                      },
                    ),
                    Text(
                      DateFormat('HH:mm:ss').format(adjustedTime),
-                     style: const TextStyle(color: Colors.blueAccent, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                     style: const TextStyle(color: Colors.blueAccent, fontSize: 16, fontWeight: FontWeight.bold),
                    ),
                 ],
               ),
@@ -93,7 +93,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         TextSpan(text: speedStr.substring(firstNonZero), style: const TextStyle(color: Colors.white)),
                       ],
                     ),
-                    style: const TextStyle(fontSize: 120, fontWeight: FontWeight.bold, height: 1.1, fontFamily: 'monospace'),
+                    style: const TextStyle(fontSize: 120, fontWeight: FontWeight.bold, height: 1.1),
                   );
                 },
               ),

@@ -10,7 +10,6 @@ class FuelProvider extends ChangeNotifier {
   double _fuelRatio = 20;
   double _tankCapacity = 7;
   int _fuelBarSegments = 10;
-  String _uiProfile = 'A';
   int _gmtOffset = 8;
 
   double get lifetimeOdo => _lifetimeOdo;
@@ -20,27 +19,11 @@ class FuelProvider extends ChangeNotifier {
   double get fuelRatio => _fuelRatio;
   double get tankCapacity => _tankCapacity;
   int get fuelBarSegments => _fuelBarSegments;
-  String get uiProfile => _uiProfile;
   int get gmtOffset => _gmtOffset;
 
   // Typography logic
-  TextStyle get mainFont {
-    switch (_uiProfile) {
-      case 'B': return GoogleFonts.kodeMono();
-      case 'C': return GoogleFonts.orbitron();
-      case 'A':
-      default: return GoogleFonts.shareTechMono();
-    }
-  }
-
-  TextStyle get instrumentFont {
-    switch (_uiProfile) {
-      case 'B': return GoogleFonts.kodeMono();
-      case 'C': return const TextStyle(fontFamily: 'monospace');
-      case 'A':
-      default: return GoogleFonts.shareTechMono();
-    }
-  }
+  TextStyle get mainFont => GoogleFonts.shareTechMono();
+  TextStyle get instrumentFont => GoogleFonts.shareTechMono();
 
   FuelProvider() {
     refresh();
@@ -74,9 +57,7 @@ class FuelProvider extends ChangeNotifier {
       final segments = await db.getSetting('fuel_bar_segments');
       _fuelBarSegments = int.tryParse(segments ?? '10') ?? 10;
       
-      _uiProfile = (await db.getSetting('ui_profile')) ?? 'A';
-      
-      debugPrint('FuelProvider Refreshed: ODO=$_lifetimeOdo, UI Profile=$_uiProfile');
+      debugPrint('FuelProvider Refreshed: ODO=$_lifetimeOdo');
       notifyListeners();
     } catch (e) {
       debugPrint('FuelProvider Refresh Error: $e');

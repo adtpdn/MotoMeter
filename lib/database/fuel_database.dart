@@ -72,7 +72,6 @@ class FuelDatabase {
     await db.insert('settings', {'key': 'current_liters', 'value': '7.0'});
     await db.insert('settings', {'key': 'gmt_offset', 'value': '8'});
     await db.insert('settings', {'key': 'fuel_bar_segments', 'value': '10'});
-    await db.insert('settings', {'key': 'ui_profile', 'value': 'A'});
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -123,7 +122,6 @@ class FuelDatabase {
     if (oldVersion < 6) {
       await db.insert('settings', {'key': 'gmt_offset', 'value': '8'}, conflictAlgorithm: ConflictAlgorithm.ignore);
       await db.insert('settings', {'key': 'fuel_bar_segments', 'value': '10'}, conflictAlgorithm: ConflictAlgorithm.ignore);
-      await db.insert('settings', {'key': 'ui_profile', 'value': 'A'}, conflictAlgorithm: ConflictAlgorithm.ignore);
     }
   }
 

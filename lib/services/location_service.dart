@@ -62,12 +62,7 @@ class LocationService {
       // Speed calculation (Geolocator provides speed in m/s)
       double speedKmh = position.speed * 3.6;
       
-      // Smoothing: ignore < 0.5 km/h
-      if (speedKmh < 0.5) speedKmh = 0.0;
-      
-      _speedController.add(speedKmh);
-
-      // Distance calculation
+      // Distance calculation and Speed Fallback
       if (_lastPosition != null) {
         double distanceBetween = Geolocator.distanceBetween(
           _lastPosition!.latitude,
@@ -75,6 +70,15 @@ class LocationService {
           position.latitude,
           position.longitude,
         );
+
+        // Fallback for emulators that do not provide position.speed but do update coords
+        if (position.speed == 0.0 && distanceBetween > 0.1) {
+          final timeDiffMs = position.timestamp.difference(_lastPosition!.timestamp).inMilliseconds;
+          if (timeDiffMs > 0) {
+            double speedMs = distanceBetween / (timeDiffMs / 1000.0);
+            speedKmh = speedMs * 3.6;
+          }
+        }
         
         // Accumulate distance (more sensitive for testing/slow movement)
         if (distanceBetween > 0.5) {
@@ -82,6 +86,11 @@ class LocationService {
           _distanceController.add(_currentTripDistance);
         }
       }
+
+      // Smoothing: ignore < 0.5 km/h
+      if (speedKmh < 0.5) speedKmh = 0.0;
+      
+      _speedController.add(speedKmh);
       _locationController.add(LatLng(position.latitude, position.longitude));
       _lastPosition = position;
     });
