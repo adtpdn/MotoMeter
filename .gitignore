@@ -70,3 +70,25 @@ flake.lock
 *.db
 *.sqlite
 /tmp/
+
+# Keystore files
+*.jks
+*.keystore
+android/key.properties
+key.properties
+
+# Environment Variables & Secrets
+.env
+.env.*
+*.secret
+
+# Build outputs
+*.apk
+*.aab
+*.ipa
+
+# AI Assistant Working Directories
+.gemini/
+.gemini_artifacts/
+.cursor/
+

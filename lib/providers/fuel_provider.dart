@@ -13,6 +13,8 @@ class FuelProvider extends ChangeNotifier {
   int _fuelBarSegments = 10;
   int _gmtOffset = 8;
   bool _isFuelInitialized = false;
+  bool _isSettingsInitialized = false;
+  String _clockFormat = '24h';
 
   final Completer<void> _readyCompleter = Completer<void>();
   Future<void> waitForReady() => _readyCompleter.future;
@@ -26,6 +28,8 @@ class FuelProvider extends ChangeNotifier {
   int get fuelBarSegments => _fuelBarSegments;
   int get gmtOffset => _gmtOffset;
   bool get isFuelInitialized => _isFuelInitialized;
+  bool get isSettingsInitialized => _isSettingsInitialized;
+  String get clockFormat => _clockFormat;
 
   // Typography logic
   TextStyle get mainFont => GoogleFonts.shareTechMono();
@@ -65,6 +69,12 @@ class FuelProvider extends ChangeNotifier {
       
       final isInit = await db.getSetting('fuel_initialized');
       _isFuelInitialized = isInit == 'true';
+
+      final settingsInit = await db.getSetting('settings_initialized');
+      _isSettingsInitialized = settingsInit == 'true';
+
+      final fmt = await db.getSetting('clock_format');
+      _clockFormat = fmt ?? '24h';
 
       debugPrint('FuelProvider Refreshed: ODO=$_lifetimeOdo');
       if (!_readyCompleter.isCompleted) _readyCompleter.complete();

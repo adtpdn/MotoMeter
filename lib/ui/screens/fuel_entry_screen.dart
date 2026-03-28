@@ -146,12 +146,25 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
                 child: ElevatedButton(
                   onPressed: () async {
                     if (_formKey.currentState!.validate()) {
+                      final fuelProvider = context.read<FuelProvider>();
+                      final enteredLiters = double.parse(_litersController.text);
+                      final existingLiters = widget.existingLog?.liters ?? 0.0;
+                      final availableCapacity = (fuelProvider.tankCapacity - fuelProvider.currentLiters + existingLiters).clamp(0.0, 999.0);
+
+                      if (enteredLiters > availableCapacity) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text('Cannot overfill! Available capacity is ${availableCapacity.toStringAsFixed(2)} L'),
+                          backgroundColor: Colors.redAccent,
+                        ));
+                        return;
+                      }
+
                       final log = FuelLog(
                         id: widget.existingLog?.id,
                         date: widget.existingLog?.date ?? DateTime.now(),
                         odometerReading: double.tryParse(_odometerController.text),
                         amountIdr: double.parse(_amountController.text),
-                        liters: double.parse(_litersController.text),
+                        liters: enteredLiters,
                         pricePerLiter: double.parse(_priceController.text),
                       );
                       

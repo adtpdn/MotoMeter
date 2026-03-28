@@ -115,7 +115,11 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
   Future<void> _handleSearchInput(String val, bool isStart) async {
     _activePickIsStart = isStart;
     
-    if (val.startsWith('http') && (val.contains('maps') || val.contains('goo.gl'))) {
+    final linkRegExp = RegExp(r'(https?:\/\/[^\s]+)');
+    final match = linkRegExp.firstMatch(val);
+
+    if (match != null && (match.group(1)!.contains('maps') || match.group(1)!.contains('goo.gl'))) {
+       final extractedUrl = match.group(1)!;
        setState(() {
          _isLoading = true;
          if (isStart) _startController.text = 'Resolving Link...';
@@ -123,7 +127,7 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
          _suggestions = [];
        });
        
-       final coords = await _routeService.resolveGoogleMapsUrl(val);
+       final coords = await _routeService.resolveGoogleMapsUrl(extractedUrl);
        if (mounted) {
          setState(() {
            _isLoading = false;
@@ -432,8 +436,6 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
             children: [
               IconButton(icon: const Icon(Icons.edit_note, color: Colors.white38, size: 18), onPressed: () => _showEditTripDialog(trip)),
               IconButton(icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18), onPressed: () => _confirmDeleteTrip(trip['id'])),
-              const SizedBox(width: 4),
-              IconButton(icon: const Icon(Icons.directions, color: Colors.blueAccent, size: 18), onPressed: () => _fetchRoute(_userPos, LatLng(trip['dest_lat'], trip['dest_lon']))),
             ],
           ),
         );

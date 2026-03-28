@@ -102,23 +102,38 @@ class MainNavigationState extends State<MainNavigation> {
   Future<void> _checkFuelInitialization() async {
     final fuelProvider = context.read<FuelProvider>();
     
-    // Wait for FuelProvider to finish async DB loading before reading state
     await fuelProvider.waitForReady();
     if (!mounted) return;
 
+    // Step 1: Vehicle settings first
+    if (!fuelProvider.isSettingsInitialized) {
+      final result = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(builder: (_) => const SettingsScreen(firstRun: true)),
+      );
+      if (result == true) {
+        await fuelProvider.saveSetting('settings_initialized', 'true');
+        await fuelProvider.refresh();
+      }
+      if (!mounted) return;
+    }
+
+    // Step 2: Initial fuel log
     if (!fuelProvider.isFuelInitialized) {
-      switchToTab(2); // Fuel/Logs Tab
-      
+      switchToTab(2);
       final result = await Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const FuelEntryScreen()),
+        MaterialPageRoute(builder: (_) => const FuelEntryScreen()),
       );
-      
       if (result == true) {
         await fuelProvider.saveSetting('fuel_initialized', 'true');
         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Initial fuel tracked!'), backgroundColor: Colors.blueAccent));
-           await fuelProvider.refresh();
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Initial fuel tracked!'),
+            backgroundColor: Colors.blueAccent,
+          ));
+          await fuelProvider.refresh();
+          switchToTab(0); // Switch back to the Dash tab
         }
       }
     }

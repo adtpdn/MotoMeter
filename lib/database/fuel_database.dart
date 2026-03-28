@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/fuel_log.dart';
@@ -70,10 +71,12 @@ class FuelDatabase {
     await db.insert('settings', {'key': 'tank_capacity', 'value': '7.0'});
     await db.insert('settings', {'key': 'fuel_ratio', 'value': '20.0'});
     await db.insert('settings', {'key': 'enable_odo_logging', 'value': 'false'});
-    await db.insert('settings', {'key': 'current_liters', 'value': '7.0'});
+    await db.insert('settings', {'key': 'current_liters', 'value': '0'});
     await db.insert('settings', {'key': 'gmt_offset', 'value': '8'});
     await db.insert('settings', {'key': 'fuel_bar_segments', 'value': '10'});
     await db.insert('settings', {'key': 'fuel_initialized', 'value': 'false'});
+    await db.insert('settings', {'key': 'settings_initialized', 'value': 'false'});
+    await db.insert('settings', {'key': 'clock_format', 'value': '24h'});
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -106,7 +109,7 @@ class FuelDatabase {
     }
     if (oldVersion < 4) {
       await db.insert('settings', {'key': 'enable_odo_logging', 'value': 'false'}, conflictAlgorithm: ConflictAlgorithm.ignore);
-      await db.insert('settings', {'key': 'current_liters', 'value': '7.0'}, conflictAlgorithm: ConflictAlgorithm.ignore);
+      await db.insert('settings', {'key': 'current_liters', 'value': '0'}, conflictAlgorithm: ConflictAlgorithm.ignore);
       // Ensure ratio is 20 if default
       await db.insert('settings', {'key': 'fuel_ratio', 'value': '20.0'}, conflictAlgorithm: ConflictAlgorithm.ignore);
       await db.insert('settings', {'key': 'tank_capacity', 'value': '7.0'}, conflictAlgorithm: ConflictAlgorithm.ignore);
@@ -125,6 +128,8 @@ class FuelDatabase {
       await db.insert('settings', {'key': 'gmt_offset', 'value': '8'}, conflictAlgorithm: ConflictAlgorithm.ignore);
       await db.insert('settings', {'key': 'fuel_bar_segments', 'value': '10'}, conflictAlgorithm: ConflictAlgorithm.ignore);
       await db.insert('settings', {'key': 'fuel_initialized', 'value': 'false'}, conflictAlgorithm: ConflictAlgorithm.ignore);
+      await db.insert('settings', {'key': 'settings_initialized', 'value': 'false'}, conflictAlgorithm: ConflictAlgorithm.ignore);
+      await db.insert('settings', {'key': 'clock_format', 'value': '24h'}, conflictAlgorithm: ConflictAlgorithm.ignore);
     }
   }
 
@@ -138,10 +143,11 @@ class FuelDatabase {
     await db.insert('settings', {'key': 'tank_capacity', 'value': '7.0'});
     await db.insert('settings', {'key': 'fuel_ratio', 'value': '20.0'});
     await db.insert('settings', {'key': 'enable_odo_logging', 'value': 'false'});
-    await db.insert('settings', {'key': 'current_liters', 'value': '7.0'});
+    await db.insert('settings', {'key': 'current_liters', 'value': '0'});
     await db.insert('settings', {'key': 'gmt_offset', 'value': '8'});
     await db.insert('settings', {'key': 'fuel_bar_segments', 'value': '10'});
     await db.insert('settings', {'key': 'fuel_initialized', 'value': 'false'});
+    await db.insert('settings', {'key': 'settings_initialized', 'value': 'false'});
   }
 
   Future<String> exportData() async {
@@ -157,6 +163,37 @@ class FuelDatabase {
       'settings': settings,
     };
     return jsonEncode(data);
+  }
+
+  Future<void> importData(String jsonStr) async {
+    final db = await instance.database;
+    final data = jsonDecode(jsonStr) as Map<String, dynamic>;
+
+    await db.delete('fuel_logs');
+    await db.delete('trips');
+    await db.delete('bookmarks');
+    await db.delete('settings');
+
+    for (final row in (data['fuel_logs'] as List? ?? [])) {
+      await db.insert('fuel_logs', Map<String, dynamic>.from(row));
+    }
+    for (final row in (data['trips'] as List? ?? [])) {
+      await db.insert('trips', Map<String, dynamic>.from(row));
+    }
+    for (final row in (data['bookmarks'] as List? ?? [])) {
+      await db.insert('bookmarks', Map<String, dynamic>.from(row));
+    }
+    for (final row in (data['settings'] as List? ?? [])) {
+      await db.insert('settings', Map<String, dynamic>.from(row), conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+  }
+
+  Future<File> exportToFile() async {
+    final jsonStr = await exportData();
+    final dir = (await getDatabasesPath());
+    final file = File('$dir/motometer_backup.sav');
+    await file.writeAsString(jsonStr);
+    return file;
   }
 
   Future<void> saveSetting(String key, String value) async {
@@ -177,8 +214,11 @@ class FuelDatabase {
     final db = await instance.database;
     final id = await db.insert('fuel_logs', log.toMap());
     
-    // Sync current liters and odometer
-    await saveCurrentLiters(log.liters);
+    // ADDITIVE: add liters to current tank level (capped to tank capacity)
+    final current = await getCurrentLiters();
+    final capacity = await getTankCapacity();
+    await saveCurrentLiters((current + log.liters).clamp(0, capacity));
+    
     if (log.odometerReading != null) {
       await saveSetting('odo_lifetime', log.odometerReading.toString());
     }
@@ -194,17 +234,30 @@ class FuelDatabase {
 
   Future<int> updateFuelLog(FuelLog log) async {
     final db = await instance.database;
-    final res = await db.update('fuel_logs', log.toMap(), where: 'id = ?', whereArgs: [log.id]);
-    
-    final logs = await getAllLogs();
-    if (logs.isNotEmpty && logs.first.id == log.id) {
-       await saveCurrentLiters(log.liters);
+
+    // DELTA: adjust current_liters by the difference in liters
+    final existing = await db.query('fuel_logs', where: 'id = ?', whereArgs: [log.id]);
+    if (existing.isNotEmpty) {
+      final oldLiters = (existing.first['liters'] as num).toDouble();
+      final diff = log.liters - oldLiters;
+      final current = await getCurrentLiters();
+      final capacity = await getTankCapacity();
+      await saveCurrentLiters((current + diff).clamp(0, capacity));
     }
+
+    final res = await db.update('fuel_logs', log.toMap(), where: 'id = ?', whereArgs: [log.id]);
     return res;
   }
 
   Future<int> deleteFuelLog(int id) async {
     final db = await instance.database;
+    // Subtract the liters of the deleted log from current_liters
+    final existing = await db.query('fuel_logs', where: 'id = ?', whereArgs: [id]);
+    if (existing.isNotEmpty) {
+      final liters = (existing.first['liters'] as num).toDouble();
+      final current = await getCurrentLiters();
+      await saveCurrentLiters((current - liters).clamp(0, 9999));
+    }
     return await db.delete('fuel_logs', where: 'id = ?', whereArgs: [id]);
   }
 
@@ -225,7 +278,7 @@ class FuelDatabase {
 
   Future<double> getCurrentLiters() async {
     final s = await getSetting('current_liters');
-    return double.tryParse(s ?? '7.0') ?? 7.0;
+    return double.tryParse(s ?? '0.0') ?? 0.0;
   }
 
   Future<void> saveCurrentLiters(double liters) async {

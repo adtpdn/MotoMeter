@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    <!-- Speedometer Dial -->
+    <path
+        android:strokeColor="#448AFF"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:pathData="M70,100 A40,40 0 1 1 130,100" />
+    <!-- Ticks -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M60,60 L65,65 M140,60 L135,65 M100,20 L100,28" />
+    <!-- Blue Needle -->
+    <path
+        android:strokeColor="#448AFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:pathData="M100,85 L120,50" />
+    <!-- Center Dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M100,85 m-5,0 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0" />
+    <!-- Text: MOTOMETER -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineJoin="bevel"
+        android:strokeLineCap="square"
+        android:fillColor="#00000000"
+        android:pathData=" 
+            M10,160 v-20 l8,10 l8,-10 v20 
+            M32,160 v-20 h14 v20 z 
+            M52,140 h16 M60,140 v20 
+            M74,160 v-20 h14 v20 z 
+            M94,160 v-20 l8,10 l8,-10 v20 
+            M116,160 h14 m-14,-10 h10 m-10,-10 h14 M116,140 v20 
+            M136,140 h16 M144,140 v20 
+            M158,160 h14 m-14,-10 h10 m-10,-10 h14 M158,140 v20 
+            M178,160 v-20 h14 v10 h-14 m14,0 l6,10" />
+</vector>

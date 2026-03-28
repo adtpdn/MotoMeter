@@ -73,7 +73,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                      },
                    ),
                    Text(
-                     DateFormat('HH:mm:ss').format(adjustedTime),
+                     DateFormat(fuelProvider.clockFormat == '12h' ? 'hh:mm:ss a' : 'HH:mm:ss').format(adjustedTime),
                      style: const TextStyle(color: Colors.blueAccent, fontSize: 16, fontWeight: FontWeight.bold),
                    ),
                 ],
